@@ -1,0 +1,13 @@
+{
+  "cssSnippets": [
+    "embedded-tables"
+  ],
+  "alwaysUpdateLinks": true,
+  "newLinkFormat": "shortest",
+  "useMarkdownLinks": false,
+  "showLineNumber": true,
+  "readableLineLength": false,
+  "attachmentFolderPath": "_attachments",
+  "strictLineBreaks": true,
+  "showUnsupportedFiles": true
+}

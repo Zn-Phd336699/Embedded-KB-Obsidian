@@ -1,0 +1,18 @@
+/* 嵌入式知识库表格增强 */
+.markdown-preview-view table, .markdown-source-view table {
+  border-collapse: collapse; width: 100%; font-size: 0.9em;
+}
+.markdown-preview-view th, .markdown-source-view th {
+  background: var(--background-secondary); font-weight: 700; padding: 6px 10px;
+}
+.markdown-preview-view td, .markdown-source-view td {
+  padding: 5px 10px; border: 1px solid var(--background-modifier-border);
+}
+.markdown-preview-view tr:nth-child(even), .markdown-source-view tr:nth-child(even) {
+  background: rgba(127,127,127,0.04);
+}
+/* 代码块圆角 */
+pre { border-radius: 8px !important; }
+/* SVG 图表白底 */
+svg { background: #ffffff; }
+.theme-dark svg { background: #ffffff; }

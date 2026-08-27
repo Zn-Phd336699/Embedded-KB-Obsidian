@@ -1,0 +1,6 @@
+.obsidian/workspace*
+.obsidian/plugins/*/data.json
+.trash/
+
+# Local repair backups are recoverable but should not be shared.
+.obsidian/core-plugins.pre-repair-20260827.json
