@@ -1,0 +1,15 @@
+{
+  "publishMode": "all",
+  "whitelistDirs": [],
+  "includeDrafts": false,
+  "convertWikiLinks": true,
+  "convertCallouts": true,
+  "handleDataview": true,
+  "stripObsidianComments": true,
+  "copyImages": true,
+  "slugFromFilename": true,
+  "dateFromFrontmatter": true,
+  "defaultDate": "2025-01-01",
+  "skipDirs": [".obsidian", ".git", ".trash", "node_modules"],
+  "imageExtensions": [".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".bmp"]
+}
