@@ -10,7 +10,7 @@
   "slugFromFilename": true,
   "dateFromFrontmatter": true,
   "defaultDate": "2025-01-01",
-  "skipDirs": [".obsidian", ".git", ".trash", "node_modules"],
+  "skipDirs": [".obsidian", ".git", ".trash", "node_modules", "Templates"],
   "imageExtensions": [".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".bmp"],
   "blogRoot": "/Learning-Obsidian."
 }
