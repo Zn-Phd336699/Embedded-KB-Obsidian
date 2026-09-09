@@ -44,6 +44,7 @@ const DEFAULT_CONFIG = {
   defaultDate: '2025-01-01',    // 默认日期
   skipDirs: ['.obsidian', '.git', '.trash', 'node_modules'],
   imageExtensions: ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp'],
+  blogRoot: '',                 // 博客根路径，如 /Learning-Obsidian. （用于生成正确的内链）
 };
 
 // ============== 工具函数 ==============
@@ -159,9 +160,10 @@ function buildFilenameMap(vaultPath, config) {
 }
 
 // ============== Wiki链接转换 ==============
-function convertWikiLinks(content, filenameMap) {
+function convertWikiLinks(content, filenameMap, blogRoot) {
   // 匹配 [[链接]] 或 [[链接|别名]] 或 [[链接#锚点]] 或 [[链接#锚点|别名]]
   // 同时处理 ![[图片]] 嵌入语法
+  const root = blogRoot || '';
   return content.replace(/(!?)\[\[([^\]|#]+?)(?:#([^\]|]+))?(?:\|([^\]]+))?\]\]/g, (match, isEmbed, target, anchor, alias) => {
     target = target.trim();
     // 检查是否是图片嵌入
@@ -169,14 +171,95 @@ function convertWikiLinks(content, filenameMap) {
     if (isEmbed && isImage) {
       const imgName = path.basename(target);
       const display = alias || imgName;
-      return `![${display}](/images/${imgName})`;
+      return `![${display}](${root}/images/${imgName})`;
     }
     // 普通笔记链接
     const slug = filenameMap.get(target) || target;
     const display = alias || target;
     const anchorPart = anchor ? `#${anchor}` : '';
-    return `[${display}](/posts/${slug}/${anchorPart})`;
+    return `[${display}](${root}/posts/${slug}/${anchorPart})`;
   });
+}
+
+// ============== 根据文件名生成排序日期 ==============
+function generateSortDate(basename) {
+  // 章节号越小日期越大，降序排列时 ch01 在最前面
+  // MOC 排在最前面，然后是章节，然后是排故卡片，最后是其他
+  const baseDate = new Date('2025-06-01');
+
+  // PX-MOC 篇内容地图，排在最前，P1在最前
+  const mocMatch = basename.match(/^P(\d+)-MOC$/);
+  if (mocMatch) {
+    const d = new Date(baseDate);
+    d.setDate(d.getDate() + 30 - parseInt(mocMatch[1]));
+    return d.toISOString().split('T')[0];
+  }
+
+  // chXX 章节，章节号越小日期越大
+  const chMatch = basename.match(/^ch(\d+)/);
+  if (chMatch) {
+    const num = parseInt(chMatch[1]);
+    const d = new Date(baseDate);
+    d.setDate(d.getDate() - num);
+    return d.toISOString().split('T')[0];
+  }
+
+  // TCXX 排故卡片
+  const tcMatch = basename.match(/^TC(\d+)/);
+  if (tcMatch) {
+    const d = new Date(baseDate);
+    d.setDate(d.getDate() - 150 - parseInt(tcMatch[1]));
+    return d.toISOString().split('T')[0];
+  }
+
+  // 附录、其他
+  return '2025-01-01';
+}
+
+// ============== 自动摘要标记 ==============
+function insertExcerptMarker(content) {
+  // 如果已有 <!-- more --> 则不处理
+  if (content.includes('<!-- more -->')) return content;
+
+  const lines = content.split('\n');
+  let insertPos = -1;
+  let headingCount = 0;
+
+  // 策略：在第一个二级标题 ## 之前插入；若无二级标题，在第3个空行（段落分隔）处插入
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].startsWith('## ')) {
+      headingCount++;
+      if (headingCount === 1) {
+        insertPos = i;
+        break;
+      }
+    }
+  }
+
+  // 没有二级标题，找第3个段落结束
+  if (insertPos === -1) {
+    let paraCount = 0;
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].trim() === '' && i > 0 && lines[i-1].trim() !== '') {
+        paraCount++;
+        if (paraCount >= 3) {
+          insertPos = i + 1;
+          break;
+        }
+      }
+    }
+  }
+
+  // 兜底：文章超过20行时在第15行插入
+  if (insertPos === -1 && lines.length > 20) {
+    insertPos = 15;
+  }
+
+  if (insertPos > 0 && insertPos < lines.length) {
+    lines.splice(insertPos, 0, '', '<!-- more -->', '');
+    return lines.join('\n');
+  }
+  return content;
 }
 
 // ============== Callout转换 ==============
@@ -391,7 +474,7 @@ function main() {
       processedContent = convertCallouts(processedContent);
     }
     if (config.convertWikiLinks) {
-      processedContent = convertWikiLinks(processedContent, filenameMap);
+      processedContent = convertWikiLinks(processedContent, filenameMap, config.blogRoot);
     }
 
     // 拷贝图片
@@ -399,11 +482,14 @@ function main() {
       collectAndCopyImages(processedContent, VAULT_PATH, config);
     }
 
+    // 自动插入摘要标记 <!-- more -->，首页只显示摘要
+    processedContent = insertExcerptMarker(processedContent);
+
     // 构建新的frontmatter
     const category = extractCategory(filePath, VAULT_PATH);
     const newFm = {
       title: fm.title || basename,
-      date: fm.date || config.defaultDate,
+      date: fm.date || generateSortDate(basename),
       categories: [category],
       tags: Array.isArray(fm.tags) ? fm.tags : (fm.tags ? [fm.tags] : []),
     };
